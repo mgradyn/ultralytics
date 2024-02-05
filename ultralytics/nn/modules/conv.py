@@ -219,10 +219,9 @@ class PointWiseConv(nn.Module):
     def forward(self, x):
         return self.conv(x)
 
-
 class MobileOneBlock(nn.Module):
     def __init__(
-        self, in_channels, out_channels, k, stride=1, dilation=1, padding_mode="zeros", deploy=False, use_se=False
+        self, in_channels, out_channels, k=1, stride=1, dilation=1, padding_mode="zeros", deploy=False, use_se=False
     ):
         super(MobileOneBlock, self).__init__()
         self.deploy = deploy

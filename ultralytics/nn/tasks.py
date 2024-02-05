@@ -34,6 +34,7 @@ from ultralytics.nn.modules import (
     GhostBottleneck,
     GhostConv,
     MobileOneBlock,
+    MobileOne,
     HGBlock,
     HGStem,
     Pose,
@@ -778,6 +779,8 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             DWConvTranspose2d,
             C3x,
             RepC3,
+            MobileOneBlock,
+            MobileOne,
         ):
             c1, c2 = ch[f], args[0]
             if c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
@@ -803,11 +806,6 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             args = [ch[f]]
         elif m is Concat:
             c2 = sum(ch[x] for x in f)
-
-        elif m is MobileOneBlock:
-            c1, c2 = ch[f], args[0]
-            c2 = make_divisible(min(c2, max_channels) * width, 8)
-            args = [c1, c2, n, *args[1:]]
 
         elif m in (Detect, Segment, Pose, OBB):
             args.append([ch[x] for x in f])
