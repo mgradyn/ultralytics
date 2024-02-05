@@ -192,6 +192,7 @@ def conv_bn(in_channels, out_channels, kernel_size, stride, padding, groups=1):
     result.add_module("bn", nn.BatchNorm2d(num_features=out_channels))
     return result
 
+
 class DepthWiseConv(nn.Module):
     def __init__(self, inc, kernel_size, stride=1):
         super().__init__()
@@ -215,6 +216,7 @@ class PointWiseConv(nn.Module):
 
     def forward(self, x):
         return self.conv(x)
+
 
 class SEBlock(nn.Module):
     """
