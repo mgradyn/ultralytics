@@ -393,8 +393,9 @@ class ResNetLayer(nn.Module):
 
 
 class MobileOne(nn.Module):
-    def __init__(self, in_channels, out_channels, n, k,
-                 stride=1, dilation=1, padding_mode='zeros', deploy=False, use_se=False):
+    def __init__(
+        self, in_channels, out_channels, n, k, stride=1, dilation=1, padding_mode="zeros", deploy=False, use_se=False
+    ):
         super().__init__()
         self.m = nn.Sequential(*[MobileOneBlock(in_channels, out_channels, k, stride, deploy) for _ in range(n)])
 
