@@ -393,13 +393,83 @@ class ResNetLayer(nn.Module):
 
 
 class MobileOne(nn.Module):
-    # MobileOne
-    def __init__(
-        self, in_channels, out_channels, n=1, k=3, stride=1, dilation=1, padding_mode="zeros", deploy=False, use_se=False
-    ):
-        super().__init__()
-        self.m = nn.Sequential(*[MobileOneBlock(in_channels, out_channels, k, stride, deploy) for _ in range(n)])
+    """ MobileOne Model
 
-    def forward(self, x):
-        x = self.m(x)
+        Pytorch implementation of `An Improved One millisecond Mobile Backbone` -
+        https://arxiv.org/pdf/2206.04040.pdf
+    """
+    def __init__(self,
+                 in_channels, out_channels,
+                 num_blocks_per_stage = 2,
+                 num_conv_branches: int = 1,
+                 use_se: bool = False, num_se: int = 0,
+                 inference_mode: bool = False) -> None:
+        """ Construct MobileOne model.
+
+        :param num_blocks_per_stage: List of number of blocks per stage.
+        :param num_classes: Number of classes in the dataset.
+        :param width_multipliers: List of width multiplier for blocks in a stage.
+        :param inference_mode: If True, instantiates model in inference mode.
+        :param use_se: Whether to use SE-ReLU activations.
+        :param num_conv_branches: Number of linear conv branches.
+        """
+        super().__init__()
+        self.inference_mode = inference_mode
+        self.use_se = use_se
+        self.num_conv_branches = num_conv_branches
+
+        # Build stages
+        self.stage = self._make_stage(in_channels, out_channels, num_blocks_per_stage,
+                                      num_se_blocks=num_se if use_se else 0)
+
+    def _make_stage(self,
+                    in_channels,
+                    out_channels,
+                    num_blocks: int,
+                    num_se_blocks: int) -> nn.Sequential:
+        """ Build a stage of MobileOne model.
+
+        :param planes: Number of output channels.
+        :param num_blocks: Number of blocks in this stage.
+        :param num_se_blocks: Number of SE blocks in this stage.
+        :return: A stage of MobileOne model.
+        """
+        # Get strides for all layers
+        # strides = [2] + [1]*(num_blocks-1)
+        strides = [1]* num_blocks
+        blocks = []
+        for ix, stride in enumerate(strides):
+            use_se = False
+            if num_se_blocks > num_blocks:
+                raise ValueError("Number of SE blocks cannot "
+                                 "exceed number of layers.")
+            if ix >= (num_blocks - num_se_blocks):
+                use_se = True
+
+            # Depthwise conv
+            blocks.append(MobileOneBlock(in_channels=in_channels,
+                                         out_channels=out_channels,
+                                         kernel_size=3,
+                                         stride=stride,
+                                         padding=1,
+                                         groups=in_channels,
+                                         inference_mode=self.inference_mode,
+                                         use_se=use_se,
+                                         num_conv_branches=self.num_conv_branches))
+            # Pointwise conv
+            blocks.append(MobileOneBlock(in_channels=in_channels,
+                                         out_channels=out_channels,
+                                         kernel_size=1,
+                                         stride=1,
+                                         padding=0,
+                                         groups=1,
+                                         inference_mode=self.inference_mode,
+                                         use_se=use_se,
+                                         num_conv_branches=self.num_conv_branches))
+            in_channels = out_channels
+        return nn.Sequential(*blocks)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """ Apply forward pass. """
+        x = self.stage(x)
         return x
