@@ -221,36 +221,33 @@ class PointWiseConv(nn.Module):
 
     def forward(self, x):
         return self.conv(x)
-    
-class SEBlock(nn.Module):
-    """ Squeeze and Excite module.
 
-        Pytorch implementation of `Squeeze-and-Excitation Networks` -
-        https://arxiv.org/pdf/1709.01507.pdf
+
+class SEBlock(nn.Module):
+    """
+    Squeeze and Excite module.
+
+    Pytorch implementation of `Squeeze-and-Excitation Networks` -
+    https://arxiv.org/pdf/1709.01507.pdf
     """
 
-    def __init__(self,
-                 in_channels: int,
-                 rd_ratio: float = 0.0625) -> None:
-        """ Construct a Squeeze and Excite Module.
+    def __init__(self, in_channels: int, rd_ratio: float = 0.0625) -> None:
+        """
+        Construct a Squeeze and Excite Module.
 
         :param in_channels: Number of input channels.
         :param rd_ratio: Input channel reduction ratio.
         """
         super(SEBlock, self).__init__()
-        self.reduce = nn.Conv2d(in_channels=in_channels,
-                                out_channels=int(in_channels * rd_ratio),
-                                kernel_size=1,
-                                stride=1,
-                                bias=True)
-        self.expand = nn.Conv2d(in_channels=int(in_channels * rd_ratio),
-                                out_channels=in_channels,
-                                kernel_size=1,
-                                stride=1,
-                                bias=True)
+        self.reduce = nn.Conv2d(
+            in_channels=in_channels, out_channels=int(in_channels * rd_ratio), kernel_size=1, stride=1, bias=True
+        )
+        self.expand = nn.Conv2d(
+            in_channels=int(in_channels * rd_ratio), out_channels=in_channels, kernel_size=1, stride=1, bias=True
+        )
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-        """ Apply forward pass. """
+        """Apply forward pass."""
         b, c, h, w = inputs.size()
         x = F.avg_pool2d(inputs, kernel_size=[h, w])
         x = self.reduce(x)
@@ -262,26 +259,29 @@ class SEBlock(nn.Module):
 
 
 class MobileOneBlock(nn.Module):
-    """ MobileOne building block.
-
-        This block has a multi-branched architecture at train-time
-        and plain-CNN style architecture at inference time
-        For more details, please refer to our paper:
-        `An Improved One millisecond Mobile Backbone` -
-        https://arxiv.org/pdf/2206.04040.pdf
     """
-    def __init__(self,
-                 in_channels: int,
-                 out_channels: int,
-                 kernel_size: int,
-                 stride: int = 1,
-                 padding: int = 0,
-                 dilation: int = 1,
-                 groups: int = 1,
-                 inference_mode: bool = False,
-                 use_se: bool = False,
-                 num_conv_branches: int = 1) -> None:
-        """ Construct a MobileOneBlock module.
+    MobileOne building block.
+
+    This block has a multi-branched architecture at train-time and plain-CNN style architecture at inference time For
+    more details, please refer to our paper: `An Improved One millisecond Mobile Backbone` -
+    https://arxiv.org/pdf/2206.04040.pdf
+    """
+
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: int,
+        stride: int = 1,
+        padding: int = 0,
+        dilation: int = 1,
+        groups: int = 1,
+        inference_mode: bool = False,
+        use_se: bool = False,
+        num_conv_branches: int = 1,
+    ) -> None:
+        """
+        Construct a MobileOneBlock module.
 
         :param in_channels: Number of channels in the input.
         :param out_channels: Number of channels produced by the block.
@@ -311,34 +311,35 @@ class MobileOneBlock(nn.Module):
         self.activation = nn.ReLU()
 
         if inference_mode:
-            self.reparam_conv = nn.Conv2d(in_channels=in_channels,
-                                          out_channels=out_channels,
-                                          kernel_size=kernel_size,
-                                          stride=stride,
-                                          padding=padding,
-                                          dilation=dilation,
-                                          groups=groups,
-                                          bias=True)
+            self.reparam_conv = nn.Conv2d(
+                in_channels=in_channels,
+                out_channels=out_channels,
+                kernel_size=kernel_size,
+                stride=stride,
+                padding=padding,
+                dilation=dilation,
+                groups=groups,
+                bias=True,
+            )
         else:
             # Re-parameterizable skip connection
-            self.rbr_skip = nn.BatchNorm2d(num_features=in_channels) \
-                if out_channels == in_channels and stride == 1 else None
+            self.rbr_skip = (
+                nn.BatchNorm2d(num_features=in_channels) if out_channels == in_channels and stride == 1 else None
+            )
 
             # Re-parameterizable conv branches
             rbr_conv = list()
             for _ in range(self.num_conv_branches):
-                rbr_conv.append(self._conv_bn(kernel_size=kernel_size,
-                                              padding=padding))
+                rbr_conv.append(self._conv_bn(kernel_size=kernel_size, padding=padding))
             self.rbr_conv = nn.ModuleList(rbr_conv)
 
             # Re-parameterizable scale branch
             self.rbr_scale = None
             if kernel_size > 1:
-                self.rbr_scale = self._conv_bn(kernel_size=1,
-                                               padding=0)
+                self.rbr_scale = self._conv_bn(kernel_size=1, padding=0)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """ Apply forward pass. """
+        """Apply forward pass."""
         # Inference mode forward pass.
         if self.inference_mode:
             return self.activation(self.se(self.reparam_conv(x)))
@@ -363,7 +364,7 @@ class MobileOneBlock(nn.Module):
         return self.activation(self.se(out))
 
     def reparameterize(self):
-        """ Following works like `RepVGG: Making VGG-style ConvNets Great Again` -
+        """Following works like `RepVGG: Making VGG-style ConvNets Great Again` -
         https://arxiv.org/pdf/2101.03697.pdf. We re-parameterize multi-branched
         architecture used at training time to obtain a plain CNN-like structure
         for inference.
@@ -371,29 +372,31 @@ class MobileOneBlock(nn.Module):
         if self.inference_mode:
             return
         kernel, bias = self._get_kernel_bias()
-        self.reparam_conv = nn.Conv2d(in_channels=self.rbr_conv[0].conv.in_channels,
-                                      out_channels=self.rbr_conv[0].conv.out_channels,
-                                      kernel_size=self.rbr_conv[0].conv.kernel_size,
-                                      stride=self.rbr_conv[0].conv.stride,
-                                      padding=self.rbr_conv[0].conv.padding,
-                                      dilation=self.rbr_conv[0].conv.dilation,
-                                      groups=self.rbr_conv[0].conv.groups,
-                                      bias=True)
+        self.reparam_conv = nn.Conv2d(
+            in_channels=self.rbr_conv[0].conv.in_channels,
+            out_channels=self.rbr_conv[0].conv.out_channels,
+            kernel_size=self.rbr_conv[0].conv.kernel_size,
+            stride=self.rbr_conv[0].conv.stride,
+            padding=self.rbr_conv[0].conv.padding,
+            dilation=self.rbr_conv[0].conv.dilation,
+            groups=self.rbr_conv[0].conv.groups,
+            bias=True,
+        )
         self.reparam_conv.weight.data = kernel
         self.reparam_conv.bias.data = bias
 
         # Delete un-used branches
         for para in self.parameters():
             para.detach_()
-        self.__delattr__('rbr_conv')
-        self.__delattr__('rbr_scale')
-        if hasattr(self, 'rbr_skip'):
-            self.__delattr__('rbr_skip')
+        self.__delattr__("rbr_conv")
+        self.__delattr__("rbr_scale")
+        if hasattr(self, "rbr_skip"):
+            self.__delattr__("rbr_skip")
 
         self.inference_mode = True
 
     def _get_kernel_bias(self) -> Tuple[torch.Tensor, torch.Tensor]:
-        """ Method to obtain re-parameterized kernel and bias.
+        """Method to obtain re-parameterized kernel and bias.
         Reference: https://github.com/DingXiaoH/RepVGG/blob/main/repvgg.py#L83
 
         :return: Tuple of (kernel, bias) after fusing branches.
@@ -405,8 +408,7 @@ class MobileOneBlock(nn.Module):
             kernel_scale, bias_scale = self._fuse_bn_tensor(self.rbr_scale)
             # Pad scale branch kernel to match conv branch kernel size.
             pad = self.kernel_size // 2
-            kernel_scale = torch.nn.functional.pad(kernel_scale,
-                                                   [pad, pad, pad, pad])
+            kernel_scale = torch.nn.functional.pad(kernel_scale, [pad, pad, pad, pad])
 
         # get weights and bias of skip branch
         kernel_identity = 0
@@ -427,7 +429,7 @@ class MobileOneBlock(nn.Module):
         return kernel_final, bias_final
 
     def _fuse_bn_tensor(self, branch) -> Tuple[torch.Tensor, torch.Tensor]:
-        """ Method to fuse batchnorm layer with preceeding conv layer.
+        """Method to fuse batchnorm layer with preceeding conv layer.
         Reference: https://github.com/DingXiaoH/RepVGG/blob/main/repvgg.py#L95
 
         :param branch:
@@ -442,18 +444,15 @@ class MobileOneBlock(nn.Module):
             eps = branch.bn.eps
         else:
             assert isinstance(branch, nn.BatchNorm2d)
-            if not hasattr(self, 'id_tensor'):
+            if not hasattr(self, "id_tensor"):
                 input_dim = self.in_channels // self.groups
-                kernel_value = torch.zeros((self.in_channels,
-                                            input_dim,
-                                            self.kernel_size,
-                                            self.kernel_size),
-                                           dtype=branch.weight.dtype,
-                                           device=branch.weight.device)
+                kernel_value = torch.zeros(
+                    (self.in_channels, input_dim, self.kernel_size, self.kernel_size),
+                    dtype=branch.weight.dtype,
+                    device=branch.weight.device,
+                )
                 for i in range(self.in_channels):
-                    kernel_value[i, i % input_dim,
-                                 self.kernel_size // 2,
-                                 self.kernel_size // 2] = 1
+                    kernel_value[i, i % input_dim, self.kernel_size // 2, self.kernel_size // 2] = 1
                 self.id_tensor = kernel_value
             kernel = self.id_tensor
             running_mean = branch.running_mean
@@ -465,24 +464,28 @@ class MobileOneBlock(nn.Module):
         t = (gamma / std).reshape(-1, 1, 1, 1)
         return kernel * t, beta - running_mean * gamma / std
 
-    def _conv_bn(self,
-                 kernel_size: int,
-                 padding: int) -> nn.Sequential:
-        """ Helper method to construct conv-batchnorm layers.
+    def _conv_bn(self, kernel_size: int, padding: int) -> nn.Sequential:
+        """
+        Helper method to construct conv-batchnorm layers.
 
         :param kernel_size: Size of the convolution kernel.
         :param padding: Zero-padding size.
         :return: Conv-BN module.
         """
         mod_list = nn.Sequential()
-        mod_list.add_module('conv', nn.Conv2d(in_channels=self.in_channels,
-                                              out_channels=self.out_channels,
-                                              kernel_size=kernel_size,
-                                              stride=self.stride,
-                                              padding=padding,
-                                              groups=self.groups,
-                                              bias=False))
-        mod_list.add_module('bn', nn.BatchNorm2d(num_features=self.out_channels))
+        mod_list.add_module(
+            "conv",
+            nn.Conv2d(
+                in_channels=self.in_channels,
+                out_channels=self.out_channels,
+                kernel_size=kernel_size,
+                stride=self.stride,
+                padding=padding,
+                groups=self.groups,
+                bias=False,
+            ),
+        )
+        mod_list.add_module("bn", nn.BatchNorm2d(num_features=self.out_channels))
         return mod_list
 
 
