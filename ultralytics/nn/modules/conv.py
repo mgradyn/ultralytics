@@ -6,7 +6,6 @@ import math
 import numpy as np
 import torch
 import torch.nn as nn
-from typing import Tuple
 import torch.nn.functional as F
 
 
@@ -193,13 +192,16 @@ def conv_bn(in_channels, out_channels, kernel_size, stride, padding, groups=1):
     result.add_module("bn", nn.BatchNorm2d(num_features=out_channels))
     return result
 
-
 class DepthWiseConv(nn.Module):
     def __init__(self, inc, kernel_size, stride=1):
         super().__init__()
         padding = 1
         if kernel_size == 1:
             padding = 0
+        # self.conv = nn.Sequential(
+        #     nn.Conv2d(inc, inc, kernel_size, stride, padding, groups=inc, bias=False,),
+        #     nn.BatchNorm2d(inc),
+        # )
         self.conv = conv_bn(inc, inc, kernel_size, stride, padding, inc)
 
     def forward(self, x):
@@ -213,7 +215,6 @@ class PointWiseConv(nn.Module):
 
     def forward(self, x):
         return self.conv(x)
-
 
 class SEBlock(nn.Module):
     """
