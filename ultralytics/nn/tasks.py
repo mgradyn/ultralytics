@@ -13,6 +13,7 @@ from ultralytics.nn.modules import (
     C2,
     C3,
     C3TR,
+    CBAM,
     OBB,
     SPP,
     SPPF,
