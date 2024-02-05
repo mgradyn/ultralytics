@@ -260,6 +260,7 @@ class SEBlock(nn.Module):
         x = x.view(-1, c, 1, 1)
         return inputs * x
 
+
 class MobileOneBlock(nn.Module):
     """ MobileOne building block.
 
