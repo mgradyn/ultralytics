@@ -227,6 +227,7 @@ class C2f(nn.Module):
         y.extend(m(y[-1]) for m in self.m)
         return self.cv2(torch.cat(y, 1))
 
+
 class C2fGhost(nn.Module):
     """Faster Implementation of CSP Bottleneck with 2 convolutions."""
 
@@ -253,6 +254,7 @@ class C2fGhost(nn.Module):
         y = list(self.cv1(x).split((self.c, self.c), 1))
         y.extend(m(y[-1]) for m in self.m)
         return self.cv2(torch.cat(y, 1))
+
 
 class C3(nn.Module):
     """CSP Bottleneck with 3 convolutions."""
