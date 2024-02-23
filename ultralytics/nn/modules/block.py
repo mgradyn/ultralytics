@@ -18,6 +18,7 @@ __all__ = (
     "C2",
     "C3",
     "C2f",
+    "C2fGhost",
     "C3x",
     "C3TR",
     "C3Ghost",
