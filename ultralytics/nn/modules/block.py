@@ -5,7 +5,17 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .conv import Conv, DWConv, GhostConv, DepthwiseSeparableConv, ConvBnHswish, MobileNetV3ResidualBlock, LightConv, RepConv, MobileOneBlock
+from .conv import (
+    Conv,
+    DWConv,
+    GhostConv,
+    DepthwiseSeparableConv,
+    ConvBnHswish,
+    MobileNetV3ResidualBlock,
+    LightConv,
+    RepConv,
+    MobileOneBlock,
+)
 from .transformer import TransformerBlock
 
 __all__ = (
@@ -192,7 +202,8 @@ class SPPFGhost(nn.Module):
         y1 = self.m(x)
         y2 = self.m(y1)
         return self.cv2(torch.cat((x, y1, y2, self.m(y2)), 1))
-    
+
+
 class SPPFMobilenet(nn.Module):
     """Spatial Pyramid Pooling - Fast (SPPF) layer for YOLOv5 by Glenn Jocher."""
 
@@ -214,6 +225,7 @@ class SPPFMobilenet(nn.Module):
         y1 = self.m(x)
         y2 = self.m(y1)
         return self.cv2(torch.cat((x, y1, y2, self.m(y2)), 1))
+
 
 class C1(nn.Module):
     """CSP Bottleneck with 1 convolution."""
@@ -303,6 +315,7 @@ class C2fGhost(nn.Module):
         y.extend(m(y[-1]) for m in self.m)
         return self.cv2(torch.cat(y, 1))
 
+
 class C2fMobilenet(nn.Module):
     """Faster Implementation of CSP Bottleneck with 2 convolutions."""
 
@@ -316,7 +329,9 @@ class C2fMobilenet(nn.Module):
         self.cv1 = DepthwiseSeparableConv(c1, 2 * self.c, 1, 1)
         self.cv2 = DepthwiseSeparableConv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
 
-        self.m = nn.ModuleList(MobileNetV3ResidualBlock(self.c, c2, self.c, 3, 1, use_se=True, use_hs=True) for _ in range(n))
+        self.m = nn.ModuleList(
+            MobileNetV3ResidualBlock(self.c, c2, self.c, 3, 1, use_se=True, use_hs=True) for _ in range(n)
+        )
 
     def forward(self, x):
         """Forward pass through C2f layer."""
@@ -329,6 +344,7 @@ class C2fMobilenet(nn.Module):
         y = list(self.cv1(x).split((self.c, self.c), 1))
         y.extend(m(y[-1]) for m in self.m)
         return self.cv2(torch.cat(y, 1))
+
 
 class C3(nn.Module):
     """CSP Bottleneck with 3 convolutions."""

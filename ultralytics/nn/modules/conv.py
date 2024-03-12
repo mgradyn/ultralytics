@@ -111,6 +111,7 @@ class DWConv(Conv):
         """Initialize Depth-wise convolution with given parameters."""
         super().__init__(c1, c2, k, s, g=math.gcd(c1, c2), d=d, act=act)
 
+
 class DepthwiseSeparableConv(nn.Module):
     def __init__(self, c1, c2, k=1, s=1, act=True):
         """Initialize Depth-wise separable convolution with given parameters."""
@@ -123,6 +124,7 @@ class DepthwiseSeparableConv(nn.Module):
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)
         return x
+
 
 class DWConvTranspose2d(nn.ConvTranspose2d):
     """Depth-wise transpose convolution."""
@@ -189,32 +191,32 @@ class GhostConv(nn.Module):
         y = self.cv1(x)
         return torch.cat((y, self.cv2(y)), 1)
 
+
 class SeBlock(nn.Module):
     def __init__(self, c1, reduction=4):
         super().__init__()
         self.Squeeze = nn.AdaptiveAvgPool2d(1)
 
         self.Excitation = nn.Sequential()
-        self.Excitation.add_module('FC1', nn.Conv2d(c1, c1 // reduction, kernel_size=1)) 
-        self.Excitation.add_module('ReLU', nn.ReLU())
-        self.Excitation.add_module('FC2', nn.Conv2d(c1 // reduction, c1, kernel_size=1))
-        self.Excitation.add_module('Sigmoid', nn.Sigmoid())
+        self.Excitation.add_module("FC1", nn.Conv2d(c1, c1 // reduction, kernel_size=1))
+        self.Excitation.add_module("ReLU", nn.ReLU())
+        self.Excitation.add_module("FC2", nn.Conv2d(c1 // reduction, c1, kernel_size=1))
+        self.Excitation.add_module("Sigmoid", nn.Sigmoid())
 
     def forward(self, x):
         y = self.Squeeze(x)
-        ouput = self.Excitation(y)
-        return x*(ouput.expand_as(x))
+        output = self.Excitation(y)
+        return x * (output.expand_as(x))
+
 
 class ConvBnHswish(nn.Module):
     """
-    This equals to
-    def conv_3x3_bn(inp, oup, stride):
-        return nn.Sequential(
-            nn.Conv2d(inp, oup, 3, stride, 1, bias=False),
-            nn.BatchNorm2d(oup),
-            h_swish()
-        )
+    This equals to def conv_3x3_bn(inp, oup, stride): return nn.Sequential( nn.Conv2d(inp, oup, 3, stride, 1,
+    bias=False), nn.BatchNorm2d(oup),
+
+    h_swish() )
     """
+
     def __init__(self, c1, c2, s):
         super(ConvBnHswish, self).__init__()
         self.conv = nn.Conv2d(c1, c2, 3, s, 1, bias=False)
@@ -224,6 +226,7 @@ class ConvBnHswish(nn.Module):
     def forward(self, x):
         return self.act(self.bn(self.conv(x)))
 
+
 class MobileNetV3ResidualBlock(nn.Module):
     def __init__(self, c1, c2, hidden_dim, k, s, use_se, use_hs):
         super(MobileNetV3ResidualBlock, self).__init__()
@@ -231,11 +234,11 @@ class MobileNetV3ResidualBlock(nn.Module):
 
         self.identity = s == 1 and c1 == c2
 
-        # a pointwise (1x1) convolution is used to reduce the number of input 
-        # channels to a smaller "hidden" dimension, which reduces computational 
-        # cost. This reduction is followed by a depthwise separable 
-        # convolution, which operates on this smaller set of channels. 
-        # Finally, another pointwise convolution is applied to expand the channels 
+        # a pointwise (1x1) convolution is used to reduce the number of input
+        # channels to a smaller "hidden" dimension, which reduces computational
+        # cost. This reduction is followed by a depthwise separable
+        # convolution, which operates on this smaller set of channels.
+        # Finally, another pointwise convolution is applied to expand the channels
         # back to the desired output size.
 
         if c1 == hidden_dim:
@@ -252,7 +255,7 @@ class MobileNetV3ResidualBlock(nn.Module):
                 # pw
                 Conv(c1, hidden_dim, 1, 1, None, act=nn.Hardswish()),
                 # dw
-                Conv(hidden_dim, hidden_dim, k, s, (k - 1) // 2,hidden_dim,  act=False),
+                Conv(hidden_dim, hidden_dim, k, s, (k - 1) // 2, hidden_dim, act=False),
                 # Squeeze-and-Excite
                 SeBlock(hidden_dim) if use_se else nn.Sequential(),
                 nn.Hardswish() if use_hs else nn.SiLU(),
@@ -309,7 +312,7 @@ class PointWiseConv(nn.Module):
 
     def forward(self, x):
         return self.conv(x)
-    
+
 
 class MobileOneBlock(nn.Module):
     def __init__(
