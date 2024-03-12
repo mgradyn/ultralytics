@@ -330,8 +330,7 @@ class C2fMobilenet(nn.Module):
         self.cv2 = DepthwiseSeparableConv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
 
         self.m = nn.ModuleList(
-            MobileNetV3ResidualBlock(self.c, self.c, self.c, 3, 1, use_se=True, use_hs=True)
-            for _ in range(n)
+            MobileNetV3ResidualBlock(self.c, self.c, self.c, 3, 1, use_se=True, use_hs=True) for _ in range(n)
         )
 
     def forward(self, x):
