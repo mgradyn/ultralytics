@@ -117,14 +117,17 @@ class DepthwiseSeparableConv(nn.Module):
     def __init__(self, c1, c2, k=1, s=1, act=True):
         """Initialize Depth-wise separable convolution with given parameters."""
         super().__init__()
-        self.depthwise_conv = Conv(c1, c1, k, s, g=c1, act=act)
-        self.pointwise_conv = Conv(c1, c2, 1, 1, act=act)
+        self.depthwise_conv = nn.Conv2d(c1, c1, k, s, k // 2, groups=c1, bias=False)
+        self.pointwise_conv = nn.Conv2d(c1, c2, 1, 1, 0, bias=False)
+        self.bn = nn.BatchNorm2d(c2)
+        self.act = nn.SiLU() if act else nn.Identity()
 
     def forward(self, x):
         """Apply depthwise separable convolution."""
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)
-        return x
+        x = self.bn(x)
+        return self.act(x)
 
 
 class DWConvTranspose2d(nn.ConvTranspose2d):
