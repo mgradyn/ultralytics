@@ -515,6 +515,7 @@ class ResNetLayer(nn.Module):
         """Forward pass through the ResNet layer."""
         return self.layer(x)
 
+
 class RepBottleneck(nn.Module):
     """Rep bottleneck."""
 
@@ -613,7 +614,8 @@ class SPPELAN(nn.Module):
         y = [self.cv1(x)]
         y.extend(m(y[-1]) for m in [self.cv2, self.cv3, self.cv4])
         return self.cv5(torch.cat(y, 1))
-    
+
+
 class Silence(nn.Module):
     """Silence."""
 
@@ -624,6 +626,7 @@ class Silence(nn.Module):
     def forward(self, x):
         """Forward pass through Silence layer."""
         return x
+
 
 class CBLinear(nn.Module):
     """CBLinear."""
@@ -654,6 +657,7 @@ class CBFuse(nn.Module):
         res = [F.interpolate(x[self.idx[i]], size=target_size, mode="nearest") for i, x in enumerate(xs[:-1])]
         out = torch.sum(torch.stack(res + xs[-1:]), dim=0)
         return out
+
 
 class MobileOne(nn.Module):
     def __init__(
