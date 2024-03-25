@@ -41,6 +41,12 @@ from .block import (
     Proto,
     RepC3,
     ResNetLayer,
+    RepNCSPELAN4,
+    ADown,
+    SPPELAN,
+    CBFuse,
+    CBLinear,
+    Silence
 )
 from .conv import (
     CBAM,
@@ -130,4 +136,10 @@ __all__ = (
     "MLP",
     "ResNetLayer",
     "OBB",
+    "RepNCSPELAN4",
+    "ADown",
+    "SPPELAN",
+    "CBFuse",
+    "CBLinear",
+    "Silence"
 )
