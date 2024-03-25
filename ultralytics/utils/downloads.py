@@ -23,6 +23,7 @@ GITHUB_ASSETS_NAMES = (
     + [f"yolo_nas_{k}.pt" for k in "sml"]
     + [f"sam_{k}.pt" for k in "bl"]
     + [f"FastSAM-{k}.pt" for k in "sx"]
+    + [f"yolov9{k}.pt" for k in "ce"]
     + [f"rtdetr-{k}.pt" for k in "lx"]
     + ["mobile_sam.pt"]
 )
