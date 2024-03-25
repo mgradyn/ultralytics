@@ -46,7 +46,7 @@ from .block import (
     SPPELAN,
     CBFuse,
     CBLinear,
-    Silence
+    Silence,
 )
 from .conv import (
     CBAM,
@@ -141,5 +141,5 @@ __all__ = (
     "SPPELAN",
     "CBFuse",
     "CBLinear",
-    "Silence"
+    "Silence",
 )
