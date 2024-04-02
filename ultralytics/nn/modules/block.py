@@ -31,11 +31,13 @@ __all__ = (
     "C3",
     "C2f",
     "C2fGhost",
+    "C2fGhost_2",
     "C2fMobilenet",
     "C3x",
     "C3TR",
     "C3Ghost",
     "GhostBottleneck",
+    "GhostBottleneck_2",
     "Bottleneck",
     "BottleneckCSP",
     "Proto",
@@ -320,7 +322,33 @@ class C2fGhost(nn.Module):
         y = list(self.cv1(x).split((self.c, self.c), 1))
         y.extend(m(y[-1]) for m in self.m)
         return self.cv2(torch.cat(y, 1))
+    
+class C2fGhost_2(nn.Module):
+    """Faster Implementation of CSP Bottleneck with 2 convolutions."""
 
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):
+        """Initialize CSP bottleneck layer with two convolutions with arguments ch_in, ch_out, number, shortcut, groups,
+        expansion.
+        """
+        super().__init__()
+        self.c = int(c2 * e)  # hidden channels
+
+        self.cv1 = GhostConv(c1, 2 * self.c, 1, 1)
+        self.cv2 = GhostConv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+
+        self.m = nn.ModuleList(GhostBottleneck_2(self.c, self.c) for _ in range(n))
+
+    def forward(self, x):
+        """Forward pass through C2f layer."""
+        y = list(self.cv1(x).chunk(2, 1))
+        y.extend(m(y[-1]) for m in self.m)
+        return self.cv2(torch.cat(y, 1))
+
+    def forward_split(self, x):
+        """Forward pass using split() instead of chunk()."""
+        y = list(self.cv1(x).split((self.c, self.c), 1))
+        y.extend(m(y[-1]) for m in self.m)
+        return self.cv2(torch.cat(y, 1))
 
 class C2fMobilenet(nn.Module):
     """Faster Implementation of CSP Bottleneck with 2 convolutions."""
@@ -435,7 +463,26 @@ class GhostBottleneck(nn.Module):
     def forward(self, x):
         """Applies skip connection and concatenation to input tensor."""
         return self.conv(x) + self.shortcut(x)
+    
+class GhostBottleneck_2(nn.Module):
+    """Ghost Bottleneck https://github.com/huawei-noah/ghostnet."""
 
+    def __init__(self, c1, c2, k=3, s=1):
+        """Initializes GhostBottleneck module with arguments ch_in, ch_out, kernel, stride."""
+        super().__init__()
+        c_ = c2 // 2
+        self.conv = nn.Sequential(
+            GhostConv(c1, c_, 1, 1),  # pw
+            DWConv(c_, c_, k, s, act=False) if s == 2 else nn.Identity(),  # dw
+            GhostConv(c_, c2, 1, 1, act=False),  # pw-linear
+        )
+        self.shortcut = (
+            nn.Sequential(DWConv(c1, c1, k, s, act=False), GhostConv(c1, c2, 1, 1, act=False)) if s == 2 else nn.Identity()
+        )
+
+    def forward(self, x):
+        """Applies skip connection and concatenation to input tensor."""
+        return self.conv(x) + self.shortcut(x)
 
 class Bottleneck(nn.Module):
     """Standard bottleneck."""
