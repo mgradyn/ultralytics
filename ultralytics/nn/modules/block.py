@@ -322,7 +322,8 @@ class C2fGhost(nn.Module):
         y = list(self.cv1(x).split((self.c, self.c), 1))
         y.extend(m(y[-1]) for m in self.m)
         return self.cv2(torch.cat(y, 1))
-    
+
+
 class C2fGhost_2(nn.Module):
     """Faster Implementation of CSP Bottleneck with 2 convolutions."""
 
@@ -349,6 +350,7 @@ class C2fGhost_2(nn.Module):
         y = list(self.cv1(x).split((self.c, self.c), 1))
         y.extend(m(y[-1]) for m in self.m)
         return self.cv2(torch.cat(y, 1))
+
 
 class C2fMobilenet(nn.Module):
     """Faster Implementation of CSP Bottleneck with 2 convolutions."""
@@ -463,7 +465,8 @@ class GhostBottleneck(nn.Module):
     def forward(self, x):
         """Applies skip connection and concatenation to input tensor."""
         return self.conv(x) + self.shortcut(x)
-    
+
+
 class GhostBottleneck_2(nn.Module):
     """Ghost Bottleneck https://github.com/huawei-noah/ghostnet."""
 
@@ -477,12 +480,15 @@ class GhostBottleneck_2(nn.Module):
             GhostConv(c_, c2, 1, 1, act=False),  # pw-linear
         )
         self.shortcut = (
-            nn.Sequential(DWConv(c1, c1, k, s, act=False), GhostConv(c1, c2, 1, 1, act=False)) if s == 2 else nn.Identity()
+            nn.Sequential(DWConv(c1, c1, k, s, act=False), GhostConv(c1, c2, 1, 1, act=False))
+            if s == 2
+            else nn.Identity()
         )
 
     def forward(self, x):
         """Applies skip connection and concatenation to input tensor."""
         return self.conv(x) + self.shortcut(x)
+
 
 class Bottleneck(nn.Module):
     """Standard bottleneck."""
