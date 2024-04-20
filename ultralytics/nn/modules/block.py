@@ -7,11 +7,10 @@ import torch.nn.functional as F
 
 from .conv import (
     Conv,
+    ConvBnHswish,
+    DepthwiseSeparableConv,
     DWConv,
     GhostConv,
-    DepthwiseSeparableConv,
-    ConvBnHswish,
-    MobileNetV3ResidualBlock,
     LightConv,
     RepConv,
 )
