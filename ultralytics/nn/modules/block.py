@@ -14,7 +14,6 @@ from .conv import (
     MobileNetV3ResidualBlock,
     LightConv,
     RepConv,
-    MobileOneBlock,
 )
 from .transformer import TransformerBlock
 
@@ -710,15 +709,3 @@ class CBFuse(nn.Module):
         res = [F.interpolate(x[self.idx[i]], size=target_size, mode="nearest") for i, x in enumerate(xs[:-1])]
         out = torch.sum(torch.stack(res + xs[-1:]), dim=0)
         return out
-
-
-class MobileOne(nn.Module):
-    def __init__(
-        self, in_channels, out_channels, n, k, stride=1, dilation=1, padding_mode="zeros", deploy=False, use_se=False
-    ):
-        super().__init__()
-        self.m = nn.Sequential(*[MobileOneBlock(in_channels, out_channels, k, stride, deploy) for _ in range(n)])
-
-    def forward(self, x):
-        x = self.m(x)
-        return x
